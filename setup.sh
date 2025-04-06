@@ -1,17 +1,18 @@
 #!/bin/bash
 
-# Bhai yeh tera dream setup hai: 4 Core + 16GB RAM + Ubuntu 22.04
-# Codespace ka Ronaldo bana diya isko 🚀
+# Bhai, this is your full OP Codespace setup in one script 💪
 
-WORKSPACE="/workspaces/$(basename $PWD)"
-DEVCONTAINER_PATH="$WORKSPACE/.devcontainer"
+WORKSPACE_NAME=$(basename "$PWD")
+DEVCONTAINER_DIR=".devcontainer"
+FULL_PATH="$PWD/$DEVCONTAINER_DIR"
+SCRIPT_DIR="$FULL_PATH/scripts"
 
-mkdir -p "$DEVCONTAINER_PATH"
+echo "🚀 Creating Ultra OP DevContainer setup in $DEVCONTAINER_DIR..."
 
-echo "⚙️ Setting up Ultra OP Dev Container in $DEVCONTAINER_PATH..."
+mkdir -p "$SCRIPT_DIR"
 
-# devcontainer.json — with machine specs
-cat <<EOF > "$DEVCONTAINER_PATH/devcontainer.json"
+# Step 1: devcontainer.json
+cat <<EOF > "$FULL_PATH/devcontainer.json"
 {
   "name": "OP Ubuntu Dev Container 4Core-16GB",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
@@ -22,73 +23,76 @@ cat <<EOF > "$DEVCONTAINER_PATH/devcontainer.json"
     "vscode": {
       "extensions": [
         "ms-azuretools.vscode-docker"
-      ]
+      ],
+      "settings": {
+        "workbench.startupEditor": "none",
+        "terminal.integrated.shellIntegration.enabled": false
+      }
     }
   },
   "hostRequirements": {
     "cpus": 4,
     "memory": "16gb"
   },
-  "postCreateCommand": "bash /workspaces/$(basename $PWD)/.devcontainer/setup.sh",
-  "remoteUser": "root",
-  "mounts": [
-    {
-      "source": "\${localWorkspaceFolder}",
-      "target": "/workspaces/$(basename $PWD)",
-      "type": "bind"
-    }
-  ]
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "remoteUser": "root"
 }
 EOF
+echo "✅ devcontainer.json created."
 
-echo "✅ devcontainer.json ready!"
+# Step 2: Dockerfile
+cat <<EOF > "$FULL_PATH/Dockerfile"
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
 
-# Dockerfile — OP Level Setup
-cat <<EOF > "$DEVCONTAINER_PATH/Dockerfile"
-FROM ubuntu:22.04
-
-RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
-curl git vim nano wget python3 python3-pip build-essential \
-htop zram-tools docker.io tlp jq unzip nodejs npm cmake \
-&& apt clean && rm -rf /var/lib/apt/lists/*
-
-RUN echo 'ALGO=lz4' > /etc/default/zramswap && echo 'PERCENT=50' >> /etc/default/zramswap && systemctl enable zramswap
-RUN systemctl enable docker
-
-WORKDIR /workspaces/$(basename $PWD)
-
-CMD ["/bin/bash"]
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \\
+    curl git vim nano wget python3 python3-pip build-essential \\
+    htop zram-tools docker.io tlp jq unzip nodejs npm cmake \\
+    && npm install -g npm yarn pm2 \\
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 EOF
+echo "✅ Dockerfile created."
 
-echo "✅ Dockerfile done!"
-
-# setup.sh — full custom tuning
-cat <<EOF > "$DEVCONTAINER_PATH/setup.sh"
+# Step 3: setup.sh
+cat <<EOF > "$FULL_PATH/setup.sh"
 #!/bin/bash
+set -e
 
-echo "🔥 Running OP Setup - Performance Mode ON..."
+echo "🔥 Running setup.sh - One-time config only..."
 
-apt update && apt install -y python3-venv tlp unzip jq && apt clean && rm -rf /var/lib/apt/lists/*
+SETUP_MARKER=".devcontainer/.setup_done"
+WORKSPACE_NAME=\$(basename "\$PWD")
+SCRIPTS_DIR=".devcontainer/scripts"
 
-echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-systemctl restart zramswap
-systemctl start docker
-systemctl enable tlp && systemctl start tlp
+if [ -f "\$SETUP_MARKER" ]; then
+  echo "✅ Setup already done. Skipping..."
+  exit 0
+fi
 
-npm install -g npm yarn pm2
+echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor || true
+systemctl enable zramswap || true
+systemctl enable tlp || true
 
 echo '* soft nofile 1048576' | tee -a /etc/security/limits.conf
 echo '* hard nofile 1048576' | tee -a /etc/security/limits.conf
-ulimit -n 1048576
+ulimit -n 1048576 || true
 
+mkdir -p "\$SCRIPTS_DIR"
+cd "\$SCRIPTS_DIR"
 
+[ ! -f "thorium.sh" ] && wget -q https://raw.githubusercontent.com/naksh-07/Automate/refs/heads/main/thorium.sh
 
-echo "✅ All Done Bhai! Ultra OP Container READY 🚀"
+[ ! -f "ognode.sh" ] && wget -q https://raw.githubusercontent.com/naksh-07/Automate/refs/heads/main/ognode.sh
+
+chmod +x *.sh
+./thorium.sh
+./gaianet.sh
+./ognode.sh
+
+touch "\$SETUP_MARKER"
+echo "✅ All done! Ultra OP Codespace ready to rumble 🫡"
 EOF
+chmod +x "$FULL_PATH/setup.sh"
+echo "✅ setup.sh ready."
 
-chmod +x "$DEVCONTAINER_PATH/setup.sh"
-
-echo "🎉 Setup complete Bhai! Jaake Codespace rebuild maar!"
-
-echo -e "\n🛠️ Command to rebuild:\n"
-echo "devcontainer rebuild-container"
+echo -e "\n🎉 All done bhai! Your Ultra OP Codespace is locked & loaded.\n👉 Run this to launch or rebuild Codespace:"
+echo "   devcontainer rebuild-container"
