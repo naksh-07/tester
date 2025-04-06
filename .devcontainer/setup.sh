@@ -29,7 +29,6 @@ cd "$SCRIPTS_DIR"
 
 chmod +x *.sh
 ./thorium.sh
-./gaianet.sh
 ./ognode.sh
 
 touch "$SETUP_MARKER"
